@@ -1,0 +1,6 @@
+@BazaarScanner_HostAddress = http://localhost:5288
+
+GET {{BazaarScanner_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
