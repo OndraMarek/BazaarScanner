@@ -40,6 +40,29 @@ namespace BazaarScanner.Controllers
             return CreatedAtAction(nameof(GetAllItems), new { id = newItem.Id }, newItem);
         }
 
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateItem(string id, [FromBody] ScannedItem updatedItem)
+        {
+            if (id != updatedItem.Id)
+            {
+                return BadRequest("ID in URL does not match ID in body.");
+            }
+
+            var existingItem = await _appDbContext.Items.FindAsync(id);
+            if (existingItem == null)
+            {
+                return NotFound();
+            }
+            existingItem.Name = updatedItem.Name;
+            existingItem.Type = updatedItem.Type;
+            existingItem.Count = updatedItem.Count;
+            existingItem.ImageUrl = updatedItem.ImageUrl;
+
+            await _appDbContext.SaveChangesAsync();
+
+            return NoContent();
+        }
+
         [HttpPost("scan")]
         [Consumes("multipart/form-data")]
         public async Task<IActionResult> ScanItemAsync([FromForm] ImageUploadRequest request)
