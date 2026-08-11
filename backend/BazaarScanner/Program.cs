@@ -1,6 +1,11 @@
+using BazaarScanner.Data;
+using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlite("Data Source=bazaar.db"));
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
