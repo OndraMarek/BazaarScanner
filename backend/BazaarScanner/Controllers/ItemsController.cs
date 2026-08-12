@@ -81,9 +81,41 @@ namespace BazaarScanner.Controllers
 
             return Ok(scannedItem);
         }
+
+        [HttpPost("rescan")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> RescanItemAsync([FromForm] RescanUploadRequest request)
+        {
+            var image = request.Image;
+            if (image == null || image.Length == 0) return BadRequest("No image uploaded.");
+
+            var itemOld = System.Text.Json.JsonSerializer.Deserialize<ScannedItem>(
+                request.ItemOldJson,
+                new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+            );
+            if (itemOld == null) return BadRequest("Invalid old item data.");
+
+            using var memoryStream = new MemoryStream();
+            await image.CopyToAsync(memoryStream);
+
+            var scannedItem = await _geminiService.GetReprocessedContentFromImage(memoryStream.ToArray(), image.ContentType, itemOld);
+            if (scannedItem == null) return BadRequest("Failed to scan item.");
+
+            scannedItem.Id = Guid.NewGuid().ToString();
+            scannedItem.Count = 1;
+
+            return Ok(scannedItem);
+        }
+
         public class ImageUploadRequest
         {
             public IFormFile Image { get; set; } = null!;
+        }
+
+        public class RescanUploadRequest
+        {
+            public IFormFile Image { get; set; } = null!;
+            public string ItemOldJson { get; set; } = string.Empty;
         }
     }
 }
