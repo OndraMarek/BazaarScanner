@@ -22,13 +22,50 @@ namespace BazaarScanner.Services
                 new() {
                     Parts =
                     [
-                        new Part { Text = "Analyzuj tento předmět z půdy a vytvoř pro něj prodejní popisek a zařazení." },
+                        new Part { Text = "Analyze the item in the image and identify it as precisely as possible. " +
+                        "Provide a concise, factual name in that I can use as a search query to find this exact or similar items online. " +
+                        "Then, categorize it strictly according to the provided schema." },
                         Part.FromBytes(imageBytes, mimeType)
                     ]
                 }
             };
 
-            string schemaString = @"
+            string schemaString = GetSchemaString();
+
+            var response = await GenerateContentAsync(contents, schemaString);
+
+            return GetScannedItemFromResponse(response);
+        }
+
+        public async Task<ScannedItem?> GetReprocessedContentFromImage(byte[] imageBytes, string mimeType, ScannedItem itemOld)
+        {
+            var contents = new List<Content>
+            {
+                new() {
+                    Parts =
+                    [
+                        new Part {
+                            Text = "Analyze the item in the image again. The attached JSON contains a previous identification attempt that was incorrect, inaccurate, or too generic. " +
+                                   "Please review the image carefully, avoid repeating the previous mistake, and identify the item as precisely as possible. " +
+                                   "Provide a new, concise, factual name that I can use as a search query to find exact or similar items online. " +
+                                   "Then, categorize it strictly according to the provided schema."
+                        },
+                        new Part { Text = "Previous incorrect identification: " + System.Text.Json.JsonSerializer.Serialize(itemOld) },
+                        Part.FromBytes(imageBytes, mimeType)
+                    ]
+                }
+            };
+
+            string schemaString = GetSchemaString();
+
+            var response = await GenerateContentAsync(contents, schemaString);
+
+            return GetScannedItemFromResponse(response);
+        }
+
+        private string GetSchemaString()
+        {
+            return @"
             {
               ""type"": ""object"",
               ""properties"": {
@@ -40,8 +77,11 @@ namespace BazaarScanner.Services
               },
               ""required"": [""Name"", ""Type""]
             }";
+        }
 
-            var response = await _client.Models.GenerateContentAsync(
+        private async Task<GenerateContentResponse> GenerateContentAsync(List<Content> contents, string schemaString)
+        {
+            return await _client.Models.GenerateContentAsync(
                 model: "gemini-3.5-flash",
                 contents: contents,
                 config: new GenerateContentConfig
@@ -50,18 +90,17 @@ namespace BazaarScanner.Services
                     ResponseJsonSchema = JsonNode.Parse(schemaString)
                 }
             );
+        }
 
+        private ScannedItem? GetScannedItemFromResponse(GenerateContentResponse response)
+        {
             string text = response.Candidates[0].Content.Parts[0].Text;
-
             var options = new System.Text.Json.JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
             };
-
             options.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
-
             var item = System.Text.Json.JsonSerializer.Deserialize<ScannedItem>(text, options);
-
             return item;
         }
     }
