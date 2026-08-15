@@ -1,4 +1,5 @@
 ﻿using BazaarScanner.Data;
+using BazaarScanner.DTOs;
 using BazaarScanner.Models;
 using BazaarScanner.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -23,40 +24,44 @@ namespace BazaarScanner.Controllers
         public async Task<IActionResult> GetAllItems()
         {
             var myItems = await _appDbContext.Items.ToListAsync();
-            return Ok(myItems);
+
+            var dtos = myItems.Select(item => MapToResponseDto(item)).ToList();
+
+            return Ok(dtos);
         }
 
         [HttpPost]
-        public async Task<IActionResult> AddItem([FromBody] ScannedItem newItem)
+        public async Task<IActionResult> AddItem([FromBody] CreateItemDto dto)
         {
-            if (string.IsNullOrEmpty(newItem.Id))
+            var newItem = new ScannedItem
             {
-                newItem.Id = Guid.NewGuid().ToString();
-            }
+                Id = Guid.NewGuid().ToString(),
+                Name = dto.Name,
+                Type = dto.Type,
+                Count = dto.Count,
+                ImageUrl = dto.ImageUrl
+            };
 
             _appDbContext.Items.Add(newItem);
             await _appDbContext.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetAllItems), new { id = newItem.Id }, newItem);
+            var responseDto = MapToResponseDto(newItem);
+            return CreatedAtAction(nameof(GetAllItems), new { id = newItem.Id }, responseDto);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateItem(string id, [FromBody] ScannedItem updatedItem)
+        public async Task<IActionResult> UpdateItem(string id, [FromBody] UpdateItemDto dto)
         {
-            if (id != updatedItem.Id)
-            {
-                return BadRequest("ID in URL does not match ID in body.");
-            }
-
             var existingItem = await _appDbContext.Items.FindAsync(id);
             if (existingItem == null)
             {
                 return NotFound();
             }
-            existingItem.Name = updatedItem.Name;
-            existingItem.Type = updatedItem.Type;
-            existingItem.Count = updatedItem.Count;
-            existingItem.ImageUrl = updatedItem.ImageUrl;
+
+            existingItem.Name = dto.Name;
+            existingItem.Type = dto.Type;
+            existingItem.Count = dto.Count;
+            existingItem.ImageUrl = dto.ImageUrl;
 
             await _appDbContext.SaveChangesAsync();
 
@@ -79,7 +84,7 @@ namespace BazaarScanner.Controllers
             scannedItem.Id = Guid.NewGuid().ToString();
             scannedItem.Count = 1;
 
-            return Ok(scannedItem);
+            return Ok(MapToResponseDto(scannedItem));
         }
 
         [HttpPost("rescan")]
@@ -104,7 +109,19 @@ namespace BazaarScanner.Controllers
             scannedItem.Id = Guid.NewGuid().ToString();
             scannedItem.Count = 1;
 
-            return Ok(scannedItem);
+            return Ok(MapToResponseDto(scannedItem));
+        }
+
+        private static ItemResponseDto MapToResponseDto(ScannedItem item)
+        {
+            return new ItemResponseDto
+            {
+                Id = item.Id,
+                Name = item.Name,
+                Type = item.Type.ToString(),
+                Count = item.Count,
+                ImageUrl = item.ImageUrl
+            };
         }
 
         public class ImageUploadRequest
