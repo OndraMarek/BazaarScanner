@@ -81,15 +81,34 @@ namespace BazaarScanner.Services
 
         private async Task<GenerateContentResponse> GenerateContentAsync(List<Content> contents, string schemaString)
         {
-            return await _client.Models.GenerateContentAsync(
-                model: "gemini-3.5-flash",
-                contents: contents,
-                config: new GenerateContentConfig
+            int maxRetries = 3;
+            int delayMilliseconds = 2000;
+
+            for (int i = 0; i < maxRetries; i++)
+            {
+                try
                 {
-                    ResponseMimeType = "application/json",
-                    ResponseJsonSchema = JsonNode.Parse(schemaString)
+                    return await _client.Models.GenerateContentAsync(
+                        model: "gemini-3.5-flash",
+                        contents: contents,
+                        config: new GenerateContentConfig
+                        {
+                            ResponseMimeType = "application/json",
+                            ResponseJsonSchema = JsonNode.Parse(schemaString)
+                        }
+                    );
                 }
-            );
+                catch (Exception ex) when (i < maxRetries - 1)
+                {
+                    Console.WriteLine($"[Attempt {i + 1}/{maxRetries} failed] API is overloaded: {ex.Message}. Trying again in {delayMilliseconds} ms...");
+
+                    await Task.Delay(delayMilliseconds);
+
+                    delayMilliseconds *= 2;
+                }
+            }
+
+            throw new Exception("Service Gemini AI is currently too busy and did not respond even after several attempts. Please try again later.");
         }
 
         private ScannedItem? GetScannedItemFromResponse(GenerateContentResponse response)
