@@ -63,6 +63,31 @@ namespace BazaarScanner.Controllers
             return NoContent();
         }
 
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteItem(string id)
+        {
+            var existingItem = await _appDbContext.Items.FindAsync(id);
+            if (existingItem == null) return NotFound();
+
+            if (!string.IsNullOrEmpty(existingItem.ImageUrl))
+            {
+                var webRootPath = _environment.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+
+                var imagePath = existingItem.ImageUrl.TrimStart('/', '\\');
+                var fullFilePath = Path.Combine(webRootPath, imagePath);
+
+                if (System.IO.File.Exists(fullFilePath))
+                {
+                    System.IO.File.Delete(fullFilePath);
+                }
+            }
+
+            _appDbContext.Items.Remove(existingItem);
+            await _appDbContext.SaveChangesAsync();
+
+            return NoContent();
+        }
+
         [HttpPost("scan")]
         [Consumes("multipart/form-data")]
         public async Task<IActionResult> ScanItemAsync([FromForm] ImageUploadRequest request)
