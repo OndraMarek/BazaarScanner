@@ -20,7 +20,7 @@ function Home() {
 
   const fetchItems = async () => {
     try {
-      const response = await fetch('https://localhost:7102/api/items');
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/items`);
       if (response.ok) {
         const data = await response.json();
         setItems(data);

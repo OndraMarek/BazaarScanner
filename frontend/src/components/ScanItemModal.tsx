@@ -46,10 +46,13 @@ function ScanItemModal({ isOpen, onClose, onSaveSuccess }: ScanItemModalProps) {
     formData.append('Image', file);
 
     try {
-      const response = await fetch('https://localhost:7102/api/items/scan', {
-        method: 'POST',
-        body: formData,
-      });
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/items/scan`,
+        {
+          method: 'POST',
+          body: formData,
+        },
+      );
 
       if (response.ok) {
         const data: ScannedItem = await response.json();
@@ -76,10 +79,13 @@ function ScanItemModal({ isOpen, onClose, onSaveSuccess }: ScanItemModalProps) {
     formData.append('ItemOldJson', JSON.stringify(wrongItem));
 
     try {
-      const response = await fetch('https://localhost:7102/api/items/rescan', {
-        method: 'POST',
-        body: formData,
-      });
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/items/rescan`,
+        {
+          method: 'POST',
+          body: formData,
+        },
+      );
 
       if (response.ok) {
         const data: ScannedItem = await response.json();
@@ -107,11 +113,14 @@ function ScanItemModal({ isOpen, onClose, onSaveSuccess }: ScanItemModalProps) {
     };
 
     try {
-      const response = await fetch('https://localhost:7102/api/items', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody),
-      });
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/items`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody),
+        },
+      );
 
       if (response.ok) {
         onSaveSuccess();

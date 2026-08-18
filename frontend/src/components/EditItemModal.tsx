@@ -41,7 +41,7 @@ function EditItemModal({
 
     try {
       const response = await fetch(
-        `https://localhost:7102/api/items/${item.id}`,
+        `${import.meta.env.VITE_API_URL}/api/items/${item.id}`,
         {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },

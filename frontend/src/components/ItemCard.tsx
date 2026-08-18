@@ -11,8 +11,10 @@ function ItemCard({ item, onItemDeleted, onEditRequest }: ItemCardProps) {
     if (!window.confirm('Really delete?')) return;
     try {
       const response = await fetch(
-        `https://localhost:7102/api/items/${item.id}`,
-        { method: 'DELETE' },
+        `${import.meta.env.VITE_API_URL}/api/items/${item.id}`,
+        {
+          method: 'DELETE',
+        },
       );
       if (response.ok) onItemDeleted(item.id);
     } catch (error) {
@@ -21,7 +23,7 @@ function ItemCard({ item, onItemDeleted, onEditRequest }: ItemCardProps) {
   };
 
   const imageUrl = item.imageUrl
-    ? `https://localhost:7102${item.imageUrl}`
+    ? `${import.meta.env.VITE_API_URL}${item.imageUrl}`
     : 'https://via.placeholder.com/300?text=No+photo';
 
   return (
